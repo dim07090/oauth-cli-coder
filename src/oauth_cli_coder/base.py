@@ -52,11 +52,31 @@ class SessionRegistry:
 
     @staticmethod
     def _write_locked(fp, data: Dict[str, Any]) -> None:
-        fp.seek(0)
-        fp.truncate()
-        json.dump(data, fp, indent=2)
-        fp.flush()
+        del fp  # writes are committed atomically via a temp file and replace
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w",
+                dir=REGISTRY_DIR,
+                prefix=f"{REGISTRY_PATH.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as tmp_fp:
+                tmp_path = Path(tmp_fp.name)
+                json.dump(data, tmp_fp, indent=2)
+                tmp_fp.flush()
+                os.fsync(tmp_fp.fileno())
 
+            os.replace(tmp_path, REGISTRY_PATH)
+
+            dir_fd = os.open(REGISTRY_DIR, os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        finally:
+            if tmp_path is not None and tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
     @classmethod
     def _with_lock(cls, fn):
         """Execute *fn(data) -> data* under an exclusive file lock."""
