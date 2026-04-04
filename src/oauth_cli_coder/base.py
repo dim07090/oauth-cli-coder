@@ -16,6 +16,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from oauth_cli_coder.stealth import build_stealth_command
+
 
 # ---------------------------------------------------------------------------
 # Session Registry -- lightweight JSON file tracking active tmux sessions
@@ -277,9 +279,11 @@ class TmuxProvider(BaseProvider):
         session_prefix: str = "oauth-coder",
         session_id: Optional[str] = None,
         startup_options: Optional[List[str]] = None,
+        stealth: bool = True,
     ):
         self.command = command
         self.cwd = cwd
+        self.stealth = stealth
         self.startup_options = startup_options or []
         if session_id:
             self.session_name = f"{session_prefix}-{self.command}-{session_id}"
@@ -361,6 +365,10 @@ class TmuxProvider(BaseProvider):
         ]
         if self.cwd:
             tmux_cmd.extend(["-c", self.cwd])
+
+        if self.stealth:
+            cmd_args = build_stealth_command(cmd_args)
+            logger.debug(f"Stealth wrapper applied: {' '.join(cmd_args)}")
 
         tmux_cmd.extend(cmd_args)
         self._run_cmd(tmux_cmd)
