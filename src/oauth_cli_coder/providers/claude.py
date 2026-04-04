@@ -9,8 +9,8 @@ class ClaudeProvider(TmuxProvider):
     """
     Claude Code (claude) provider — interactions via tmux.
     """
-    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None):
-        super().__init__("claude", model, cwd=cwd)
+    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None, session_id: Optional[str] = None):
+        super().__init__("claude", model, cwd=cwd, session_id=session_id)
 
     def get_start_cmd(self) -> List[str]:
         # --permission-mode bypassPermissions is crucial for automation

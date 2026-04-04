@@ -50,6 +50,31 @@ print(coder.ask("Hello!"))
 coder.close()
 ```
 
+## Command Line Interface (CLI)
+`oauth-cli-coder` provides a CLI tool `oauth-coder` for easy interaction from shell scripts or agent harnesses without writing Python code.
+
+### Ask a question
+```bash
+oauth-coder ask claude "how's it going?" --model claude-3-5-sonnet-20241022
+```
+
+### Run a slash command
+```bash
+oauth-coder slash claude /compact
+```
+
+### Persistent Sessions
+You can reuse a session across multiple CLI calls by specifying a `--session-id`:
+```bash
+oauth-coder ask claude "Analyze this repo" --session-id my-project
+oauth-coder slash claude /compact --session-id my-project
+```
+
+### Close a session
+```bash
+oauth-coder stop claude --session-id my-project
+```
+
 ### Advanced: TUI State Assessment
 The library uses rule-based logic to get past common prompts (e.g., trust dialogs). If you have the `gemini` CLI installed, it can optionally use an LLM to assess complex TUI states and decide which keys to send to reach the main prompt.
 

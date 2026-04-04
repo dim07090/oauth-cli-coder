@@ -116,12 +116,16 @@ class TmuxProvider(BaseProvider):
         command: str, 
         model: Optional[str] = None, 
         cwd: Optional[str] = None,
-        session_prefix: str = "oauth-coder"
+        session_prefix: str = "oauth-coder",
+        session_id: Optional[str] = None
     ):
         super().__init__(model)
         self.command = command
         self.cwd = cwd
-        self.session_name = f"{session_prefix}-{self.command}-{uuid.uuid4().hex[:6]}"
+        if session_id:
+            self.session_name = f"{session_prefix}-{self.command}-{session_id}"
+        else:
+            self.session_name = f"{session_prefix}-{self.command}-{uuid.uuid4().hex[:6]}"
         self._start_session()
 
     @abstractmethod

@@ -9,8 +9,8 @@ class CodexProvider(TmuxProvider):
     """
     Codex CLI provider — interactions via tmux.
     """
-    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None):
-        super().__init__("codex", model, cwd=cwd)
+    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None, session_id: Optional[str] = None):
+        super().__init__("codex", model, cwd=cwd, session_id=session_id)
 
     def get_start_cmd(self) -> List[str]:
         # 'codex chat' starts the interactive TUI

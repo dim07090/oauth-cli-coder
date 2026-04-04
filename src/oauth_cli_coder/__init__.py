@@ -5,5 +5,5 @@ from oauth_cli_coder.providers.claude import ClaudeProvider
 from oauth_cli_coder.providers.gemini import GeminiProvider
 from oauth_cli_coder.providers.codex import CodexProvider
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["BaseProvider", "TmuxProvider", "ClaudeProvider", "GeminiProvider", "CodexProvider"]
