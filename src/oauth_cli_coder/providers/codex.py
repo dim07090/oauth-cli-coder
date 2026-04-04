@@ -9,14 +9,14 @@ class CodexProvider(TmuxProvider):
     """
     Codex CLI provider — interactions via tmux.
     """
-    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None, session_id: Optional[str] = None):
-        super().__init__("codex", model, cwd=cwd, session_id=session_id)
+    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None, session_id: Optional[str] = None, startup_options: Optional[List[str]] = None):
+        super().__init__("codex", model, cwd=cwd, session_id=session_id, startup_options=startup_options)
 
     def get_start_cmd(self) -> List[str]:
-        # 'codex chat' starts the interactive TUI
         cmd = ["codex", "chat"]
         if self.model:
             cmd.extend(["--model", self.model])
+        cmd.extend(self.startup_options)
         return cmd
 
     def is_idle(self, screen_text: str) -> bool:

@@ -112,16 +112,18 @@ class TmuxProvider(BaseProvider):
     Interacts via send-keys and paste-buffer, reads via capture-pane.
     """
     def __init__(
-        self, 
-        command: str, 
-        model: Optional[str] = None, 
+        self,
+        command: str,
+        model: Optional[str] = None,
         cwd: Optional[str] = None,
         session_prefix: str = "oauth-coder",
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        startup_options: Optional[List[str]] = None
     ):
         super().__init__(model)
         self.command = command
         self.cwd = cwd
+        self.startup_options = startup_options or []
         if session_id:
             self.session_name = f"{session_prefix}-{self.command}-{session_id}"
         else:
