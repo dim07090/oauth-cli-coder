@@ -1,8 +1,15 @@
 import click
 from typing import Optional
+from oauth_cli_coder.base import SessionRegistry
 from oauth_cli_coder.providers.claude import ClaudeProvider
 from oauth_cli_coder.providers.gemini import GeminiProvider
 from oauth_cli_coder.providers.codex import CodexProvider
+
+PROVIDERS = {
+    "claude": ClaudeProvider,
+    "gemini": GeminiProvider,
+    "codex": CodexProvider,
+}
 
 @click.group()
 def cli():
@@ -10,15 +17,11 @@ def cli():
     pass
 
 def get_provider(provider_name: str, model: Optional[str], cwd: Optional[str], session_id: Optional[str], startup_options: Optional[tuple] = None):
+    provider_cls = PROVIDERS.get(provider_name.lower())
     opts = list(startup_options) if startup_options else []
-    if provider_name.lower() == "claude":
-        return ClaudeProvider(model=model, cwd=cwd, session_id=session_id, startup_options=opts)
-    elif provider_name.lower() == "gemini":
-        return GeminiProvider(model=model, cwd=cwd, session_id=session_id, startup_options=opts)
-    elif provider_name.lower() == "codex":
-        return CodexProvider(model=model, cwd=cwd, session_id=session_id, startup_options=opts)
-    else:
+    if provider_cls is None:
         raise click.BadParameter(f"Unknown provider: {provider_name}")
+    return provider_cls(model=model, cwd=cwd, session_id=session_id, startup_options=opts)
 
 @cli.command()
 @click.argument("provider")
@@ -65,6 +68,29 @@ def stop(provider, session_id):
     p = get_provider(provider, None, None, session_id)
     p.close()
     click.echo(f"Session {p.session_name} closed.")
+
+@cli.command(name="list")
+@click.option("--prune", is_flag=True, help="Remove stale entries whose tmux sessions no longer exist.")
+def list_sessions(prune):
+    """List active sessions from the registry."""
+    if prune:
+        pruned = SessionRegistry.prune()
+        if pruned:
+            click.echo(f"Pruned {len(pruned)} stale session(s): {', '.join(pruned)}")
+
+    sessions = SessionRegistry.list_all()
+    if not sessions:
+        click.echo("No active sessions.")
+        return
+
+    # Header
+    click.echo(f"{'SESSION NAME':<50} {'PROVIDER':<10} {'MODEL':<20} {'CREATED AT'}")
+    click.echo("-" * 110)
+    for name, entry in sessions.items():
+        provider = entry.get("provider", "?")
+        model = entry.get("model") or "-"
+        created = entry.get("created_at", "?")
+        click.echo(f"{name:<50} {provider:<10} {model:<20} {created}")
 
 if __name__ == "__main__":
     cli()
