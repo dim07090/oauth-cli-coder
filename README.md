@@ -67,7 +67,8 @@ oauth-coder slash claude /compact
 You can reuse a session across multiple CLI calls by specifying a `--session-id`:
 ```bash
 oauth-coder ask claude "Analyze this repo" --session-id my-project
-oauth-coder slash claude /compact --session-id my-project
+oauth-coder slash claude /init --session-id my-project
+oauth-coder ask claude "Now give me a summary" --session-id my-project
 ```
 
 ### Close a session
@@ -77,6 +78,14 @@ oauth-coder stop claude --session-id my-project
 
 ### Advanced: TUI State Assessment
 The library uses rule-based logic to get past common prompts (e.g., trust dialogs). If you have the `gemini` CLI installed, it can optionally use an LLM to assess complex TUI states and decide which keys to send to reach the main prompt.
+
+## Examples
+
+See the [examples/](examples/) directory for full working demos, including a **Creative Chain** that wires four AI agents (Gemini, Claude Opus, Claude Sonnet, Codex) into a pipeline where each agent's output feeds into the next.
+
+```bash
+python examples/creative_chain.py "Write a short story about time travel"
+```
 
 ## Why 'OAuth'?
 By running the actual CLI binary in a real terminal (tmux), the tool can access your existing OAuth tokens, browser sessions, and local configuration. This means you don't need to manage separate API keys for your automation—if you are logged in on your terminal, the library can use it.

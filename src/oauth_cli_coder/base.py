@@ -238,6 +238,7 @@ class TmuxProvider(BaseProvider):
         startup_options: Optional[List[str]] = None,
     ):
         self.command = command
+        self.cwd = cwd
         self.startup_options = startup_options or []
         if session_id:
             self.session_name = f"{session_prefix}-{self.command}-{session_id}"

@@ -13,10 +13,10 @@ class CodexProvider(TmuxProvider):
         super().__init__("codex", model, cwd=cwd, session_id=session_id, startup_options=startup_options)
 
     def get_start_cmd(self) -> List[str]:
-        # 'codex chat' starts the interactive TUI
         cmd = ["codex", "chat"]
         if self.model:
             cmd.extend(["--model", self.model])
+        cmd.extend(self.startup_options)
         return cmd
 
     def is_idle(self, screen_text: str) -> bool:

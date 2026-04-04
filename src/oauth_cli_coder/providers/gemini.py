@@ -13,13 +13,10 @@ class GeminiProvider(TmuxProvider):
         super().__init__("gemini", model, cwd=cwd, session_id=session_id, startup_options=startup_options)
 
     def get_start_cmd(self) -> List[str]:
-        # Starting with a long prompt to ensure it stays in interactive mode
-        # or just 'gemini chat' if available.
-        # Assuming 'gemini' CLI has a chat mode or similar.
-        # Original rokugu code used 'gemini' directly.
         cmd = ["gemini"]
         if self.model:
             cmd.extend(["--model", self.model])
+        cmd.extend(self.startup_options)
         return cmd
 
     def is_idle(self, screen_text: str) -> bool:

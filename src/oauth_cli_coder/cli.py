@@ -16,11 +16,12 @@ def cli():
     """Seamlessly interact with CLI coders via tmux."""
     pass
 
-def get_provider(provider_name: str, model: Optional[str], cwd: Optional[str], session_id: Optional[str]):
+def get_provider(provider_name: str, model: Optional[str], cwd: Optional[str], session_id: Optional[str], startup_options: Optional[tuple] = None):
     provider_cls = PROVIDERS.get(provider_name.lower())
+    opts = list(startup_options) if startup_options else []
     if provider_cls is None:
         raise click.BadParameter(f"Unknown provider: {provider_name}")
-    return provider_cls(model=model, cwd=cwd, session_id=session_id)
+    return provider_cls(model=model, cwd=cwd, session_id=session_id, startup_options=opts)
 
 @cli.command()
 @click.argument("provider")
@@ -30,9 +31,10 @@ def get_provider(provider_name: str, model: Optional[str], cwd: Optional[str], s
 @click.option("--session-id", help="Session ID to reuse.")
 @click.option("--keep-alive", is_flag=True, default=True, help="Keep the session alive after the command (default).")
 @click.option("--close", is_flag=True, help="Close the session after getting the response.")
-def ask(provider, prompt, model, cwd, session_id, keep_alive, close):
+@click.option("--option", "-o", multiple=True, help="Extra startup option passed to the CLI tool (repeatable).")
+def ask(provider, prompt, model, cwd, session_id, keep_alive, close, option):
     """Send a prompt to the provider and get the response."""
-    p = get_provider(provider, model, cwd, session_id)
+    p = get_provider(provider, model, cwd, session_id, startup_options=option)
     try:
         response = p.ask(prompt)
         click.echo(response)
@@ -47,9 +49,10 @@ def ask(provider, prompt, model, cwd, session_id, keep_alive, close):
 @click.option("--cwd", help="Working directory.")
 @click.option("--session-id", help="Session ID to reuse.")
 @click.option("--close", is_flag=True, help="Close the session after the command.")
-def slash(provider, command, model, cwd, session_id, close):
+@click.option("--option", "-o", multiple=True, help="Extra startup option passed to the CLI tool (repeatable).")
+def slash(provider, command, model, cwd, session_id, close, option):
     """Run a slash command (e.g. /clear, /compact)."""
-    p = get_provider(provider, model, cwd, session_id)
+    p = get_provider(provider, model, cwd, session_id, startup_options=option)
     try:
         response = p.slash_command(command)
         click.echo(response)
