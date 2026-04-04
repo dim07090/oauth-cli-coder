@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import fcntl
+import json
 import os
 import re
 import shutil
@@ -8,9 +10,124 @@ import tempfile
 import time
 import uuid
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
+
+
+# ---------------------------------------------------------------------------
+# Session Registry -- lightweight JSON file tracking active tmux sessions
+# ---------------------------------------------------------------------------
+
+REGISTRY_DIR = Path(os.environ.get(
+    "OAUTH_CLI_CODER_CONFIG_DIR",
+    os.path.expanduser("~/.config/oauth-cli-coder"),
+))
+REGISTRY_PATH = REGISTRY_DIR / "sessions.json"
+
+
+class SessionRegistry:
+    """Thread/process-safe JSON registry for active tmux sessions."""
+
+    @staticmethod
+    def _ensure_dir() -> None:
+        REGISTRY_DIR.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _read_locked(fp) -> Dict[str, Any]:
+        fp.seek(0)
+        raw = fp.read()
+        if not raw:
+            return {}
+        return json.loads(raw)
+
+    @staticmethod
+    def _write_locked(fp, data: Dict[str, Any]) -> None:
+        fp.seek(0)
+        fp.truncate()
+        json.dump(data, fp, indent=2)
+        fp.flush()
+
+    @classmethod
+    def _with_lock(cls, fn):
+        """Execute *fn(data) -> data* under an exclusive file lock."""
+        cls._ensure_dir()
+        REGISTRY_PATH.touch(exist_ok=True)
+        with open(REGISTRY_PATH, "r+") as fp:
+            fcntl.flock(fp, fcntl.LOCK_EX)
+            try:
+                data = cls._read_locked(fp)
+                result = fn(data)
+                if result is not None:
+                    cls._write_locked(fp, result)
+            finally:
+                fcntl.flock(fp, fcntl.LOCK_UN)
+
+    # -- public API --
+
+    @classmethod
+    def register(cls, session_name: str, entry: Dict[str, Any]) -> None:
+        """Add or update a session entry."""
+        def _op(data):
+            data[session_name] = entry
+            return data
+        cls._with_lock(_op)
+        logger.debug(f"Registered session {session_name}")
+
+    @classmethod
+    def unregister(cls, session_name: str) -> None:
+        """Remove a session entry."""
+        def _op(data):
+            data.pop(session_name, None)
+            return data
+        cls._with_lock(_op)
+        logger.debug(f"Unregistered session {session_name}")
+
+    @classmethod
+    def get(cls, session_name: str) -> Optional[Dict[str, Any]]:
+        """Return the entry for *session_name*, or None."""
+        result: list = [None]
+        def _op(data):
+            result[0] = data.get(session_name)
+            return None  # no write
+        cls._with_lock(_op)
+        return result[0]
+
+    @classmethod
+    def list_all(cls) -> Dict[str, Any]:
+        """Return the full registry dict."""
+        result: list = [{}]
+        def _op(data):
+            result[0] = dict(data)
+            return None
+        cls._with_lock(_op)
+        return result[0]
+
+    @classmethod
+    def prune(cls) -> List[str]:
+        """Remove entries whose tmux sessions no longer exist.  Returns pruned names."""
+        pruned: list = [[]]
+        def _op(data):
+            to_remove = []
+            for name in list(data.keys()):
+                p = subprocess.run(
+                    ["tmux", "has-session", "-t", name],
+                    capture_output=True, text=True,
+                )
+                if p.returncode != 0:
+                    to_remove.append(name)
+            for name in to_remove:
+                data.pop(name)
+            pruned[0] = to_remove
+            if to_remove:
+                return data
+            return None  # no write needed
+        cls._with_lock(_op)
+        if pruned[0]:
+            logger.info(f"Pruned stale sessions: {pruned[0]}")
+        return pruned[0]
 
 
 class BaseProvider(ABC):
@@ -112,20 +229,33 @@ class TmuxProvider(BaseProvider):
     Interacts via send-keys and paste-buffer, reads via capture-pane.
     """
     def __init__(
-        self, 
-        command: str, 
-        model: Optional[str] = None, 
+        self,
+        command: str,
+        model: Optional[str] = None,
         cwd: Optional[str] = None,
         session_prefix: str = "oauth-coder",
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        startup_options: Optional[List[str]] = None,
     ):
-        super().__init__(model)
         self.command = command
-        self.cwd = cwd
+        self.startup_options = startup_options or []
         if session_id:
             self.session_name = f"{session_prefix}-{self.command}-{session_id}"
         else:
             self.session_name = f"{session_prefix}-{self.command}-{uuid.uuid4().hex[:6]}"
+
+        # If a tmux session already exists, try to restore config from the
+        # registry so that callers only need to supply --session-id.
+        if self._has_session():
+            entry = SessionRegistry.get(self.session_name)
+            if entry:
+                model = model or entry.get("model")
+                cwd = cwd or entry.get("cwd")
+                self.startup_options = self.startup_options or entry.get("startup_options", [])
+                logger.debug(f"Restored config from registry for {self.session_name}")
+
+        super().__init__(model)
+        self.cwd = cwd
         self._start_session()
 
     @abstractmethod
@@ -176,7 +306,7 @@ class TmuxProvider(BaseProvider):
 
         cmd_args = self.get_start_cmd()
         logger.info(f"Starting tmux session [{self.session_name}] for: {' '.join(cmd_args)}")
-        
+
         # Start detached with a large terminal size for better parsing
         tmux_cmd = [
             "tmux", "new-session", "-d", "-s", self.session_name,
@@ -184,10 +314,20 @@ class TmuxProvider(BaseProvider):
         ]
         if self.cwd:
             tmux_cmd.extend(["-c", self.cwd])
-        
+
         tmux_cmd.extend(cmd_args)
         self._run_cmd(tmux_cmd)
         self._wait_for_startup()
+
+        # Persist session metadata to the registry
+        SessionRegistry.register(self.session_name, {
+            "provider": self.command,
+            "model": self.model,
+            "cwd": self.cwd,
+            "startup_options": self.startup_options,
+            "session_name": self.session_name,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
 
     def _wait_for_startup(self, timeout=120) -> bool:
         logger.debug(f"Waiting for {self.command} startup (timeout={timeout}s)...")
@@ -346,3 +486,4 @@ class TmuxProvider(BaseProvider):
         if self._has_session():
             logger.debug(f"Killing session {self.session_name}")
             self._run_cmd(["tmux", "kill-session", "-t", self.session_name])
+        SessionRegistry.unregister(self.session_name)

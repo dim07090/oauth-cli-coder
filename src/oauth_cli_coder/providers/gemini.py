@@ -9,8 +9,8 @@ class GeminiProvider(TmuxProvider):
     """
     Gemini CLI provider — interactions via tmux.
     """
-    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None, session_id: Optional[str] = None):
-        super().__init__("gemini", model, cwd=cwd, session_id=session_id)
+    def __init__(self, model: Optional[str] = None, cwd: Optional[str] = None, session_id: Optional[str] = None, startup_options: Optional[List[str]] = None):
+        super().__init__("gemini", model, cwd=cwd, session_id=session_id, startup_options=startup_options)
 
     def get_start_cmd(self) -> List[str]:
         # Starting with a long prompt to ensure it stays in interactive mode
