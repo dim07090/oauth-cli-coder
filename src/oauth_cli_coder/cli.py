@@ -1,9 +1,15 @@
 import click
+from pathlib import Path
 from typing import Optional
 from oauth_cli_coder.base import SessionRegistry
 from oauth_cli_coder.providers.claude import ClaudeProvider
 from oauth_cli_coder.providers.gemini import GeminiProvider
 from oauth_cli_coder.providers.codex import CodexProvider
+from oauth_cli_coder.skill_template import (
+    get_skill_content,
+    get_install_path,
+    PLATFORM_NAMES,
+)
 
 PROVIDERS = {
     "claude": ClaudeProvider,
@@ -117,6 +123,46 @@ def stop_all():
         click.echo(f"  Closed {name}")
         closed += 1
     click.echo(f"{closed} session(s) closed.")
+
+@cli.group()
+def skill():
+    """Manage Agent Skill installation for external agent platforms."""
+    pass
+
+
+@skill.command(name="install")
+@click.argument("platform", type=click.Choice(PLATFORM_NAMES + ["all"], case_sensitive=False))
+@click.option("--global", "global_install", is_flag=True, help="Install to the user's home directory instead of the project directory.")
+def skill_install(platform, global_install):
+    """Install the oauth-coder Agent Skill for a platform.
+
+    PLATFORM is one of: claude-code, openclaw, codex, gemini, or 'all'.
+    """
+    platforms = PLATFORM_NAMES if platform == "all" else [platform]
+    content = get_skill_content()
+
+    seen_paths: set = set()
+    for p in platforms:
+        path = get_install_path(p, global_install=global_install)
+
+        # openclaw and codex share the same path; avoid writing twice
+        if str(path) in seen_paths:
+            click.echo(f"  {p}: (same as above)")
+            continue
+        seen_paths.add(str(path))
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+        click.echo(f"  Installed: {path}")
+
+    click.echo("Done.")
+
+
+@skill.command(name="show")
+def skill_show():
+    """Print the SKILL.md content to stdout (preview without installing)."""
+    click.echo(get_skill_content())
+
 
 if __name__ == "__main__":
     cli()
