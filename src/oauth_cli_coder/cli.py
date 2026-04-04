@@ -60,6 +60,14 @@ def slash(provider, command, model, cwd, session_id, close, option):
         if close:
             p.close()
 
+@cli.command(name="read")
+@click.argument("provider")
+@click.option("--session-id", help="Session ID to identify the session.")
+def read_screen(provider, session_id):
+    """Read the current screen output without sending anything."""
+    p = get_provider(provider, None, None, session_id)
+    click.echo(p.read_screen())
+
 @cli.command()
 @click.argument("provider")
 @click.option("--session-id", help="Session ID to identify the session.")
@@ -91,6 +99,24 @@ def list_sessions(prune):
         model = entry.get("model") or "-"
         created = entry.get("created_at", "?")
         click.echo(f"{name:<50} {provider:<10} {model:<20} {created}")
+
+@cli.command(name="stop-all")
+@click.confirmation_option(prompt="Close all active sessions?")
+def stop_all():
+    """Close all active sessions."""
+    sessions = SessionRegistry.list_all()
+    if not sessions:
+        click.echo("No active sessions.")
+        return
+
+    import subprocess
+    closed = 0
+    for name in list(sessions.keys()):
+        subprocess.run(["tmux", "kill-session", "-t", name], capture_output=True, text=True)
+        SessionRegistry.unregister(name)
+        click.echo(f"  Closed {name}")
+        closed += 1
+    click.echo(f"{closed} session(s) closed.")
 
 if __name__ == "__main__":
     cli()

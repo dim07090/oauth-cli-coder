@@ -190,6 +190,11 @@ class BaseProvider(ABC):
         pass
 
     @abstractmethod
+    def read_screen(self) -> str:
+        """Read the current screen output without sending anything."""
+        pass
+
+    @abstractmethod
     def close(self):
         """Close the session and cleanup resources."""
         pass
@@ -323,8 +328,13 @@ class TmuxProvider(BaseProvider):
         ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
         return ansi_escape.sub("", text)
 
-    def _get_pane_lines(self) -> List[str]:
-        out = self._run_cmd(["tmux", "capture-pane", "-p", "-t", self.session_name])
+    def _get_pane_lines(self, full_history: bool = False) -> List[str]:
+        cmd = ["tmux", "capture-pane", "-p", "-t", self.session_name]
+        if full_history:
+            # -S - captures from the very start of the scrollback buffer
+            # -E - captures to the very end
+            cmd.extend(["-S", "-", "-E", "-"])
+        out = self._run_cmd(cmd)
         clean = self._strip_ansi(out)
         return [line.rstrip() for line in clean.split("\n")]
 
@@ -467,50 +477,57 @@ class TmuxProvider(BaseProvider):
             else:
                 logger.warning(f"Timeout ({timeout}s) waiting for {self.command} response")
 
-            # Extract response from screen
-            lines = self._get_pane_lines()
-            result_lines = []
-            marker = self.get_marker()
-            start_idx = 0
-
-            # Look for the last prompt/marker
-            for i in range(len(lines) - 1, -1, -1):
-                if marker and lines[i].startswith(marker):
-                    start_idx = i
-                    break
-                elif not marker and lines[i].startswith("● "):
-                    start_idx = i
-                    break
-
-            if start_idx >= 0:
-                for i in range(start_idx, len(lines)):
-                    line = lines[i]
-                    # Stop at next prompt or UI boundaries
-                    if line.startswith(" > ") or line.startswith(" ▀▀") or line.startswith(" ▄▄") or line.startswith("───"):
-                        break
-                    
-                    clean_line = line
-                    if marker and clean_line.startswith(marker):
-                        clean_line = clean_line[len(marker) :]
-                    elif not marker and clean_line.startswith("● "):
-                        clean_line = clean_line[2:]
-                    result_lines.append(clean_line)
-
-            result = "\n".join(result_lines).strip()
-
-            # Fallback if no marker found
-            if not result:
-                fallback = []
-                for line in lines:
-                    if not (line.startswith(" ▀▀") or line.startswith(" ▄▄") or line.startswith("───")):
-                        fallback.append(line)
-                result = "\n".join(fallback).strip()
-
+            # Extract the last response from the full scrollback history
+            lines = self._get_pane_lines(full_history=True)
+            result = self._extract_last_response(lines)
             return result
 
         except Exception as e:
             logger.error(f"Provider CLI failed: {e}")
             return f"Error: Provider CLI failed: {e}"
+
+    def _extract_last_response(self, lines: List[str]) -> str:
+        """Parse scrollback to extract only the last response block."""
+        marker = self.get_marker()
+        ui_boundaries = (" > ", " ▀▀", " ▄▄", "───")
+
+        # Find all response marker positions
+        marker_positions = []
+        for i, line in enumerate(lines):
+            if marker and line.startswith(marker):
+                marker_positions.append(i)
+            elif not marker and line.startswith("● "):
+                marker_positions.append(i)
+
+        if not marker_positions:
+            # Fallback: return all non-UI content
+            fallback = [l for l in lines if not any(l.startswith(b) for b in ui_boundaries)]
+            return "\n".join(fallback).strip()
+
+        # Take the last marker as the start of the last response
+        start_idx = marker_positions[-1]
+        result_lines = []
+        for i in range(start_idx, len(lines)):
+            line = lines[i]
+            # Stop at UI boundaries (input prompt, status bar)
+            if any(line.startswith(b) for b in ui_boundaries):
+                break
+
+            clean_line = line
+            if marker and clean_line.startswith(marker):
+                clean_line = clean_line[len(marker):]
+            elif not marker and clean_line.startswith("● "):
+                clean_line = clean_line[2:]
+            result_lines.append(clean_line)
+
+        return "\n".join(result_lines).strip()
+
+    def read_screen(self) -> str:
+        """Read the current screen output without sending anything."""
+        if not self._has_session():
+            return "Error: no active session"
+        lines = self._get_pane_lines(full_history=True)
+        return "\n".join(lines).strip()
 
     def clear_session(self) -> str:
         return self.slash_command("/clear")

@@ -22,7 +22,7 @@ class ClaudeProvider(TmuxProvider):
 
     def is_idle(self, screen_text: str) -> bool:
         has_prompt = "❯" in screen_text
-        is_busy = any(c in screen_text for c in ["⠋", "✻", "✶" "Running", "Thinking"])
+        is_busy = any(c in screen_text for c in ["⠋", "Running", "Thinking"])
         return has_prompt and not is_busy
 
     def get_submit_keys(self) -> List[str]:
