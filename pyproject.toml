@@ -1,6 +1,6 @@
 [project]
 name = "oauth-cli-coder"
-version = "0.2.0"
+version = "0.3.0"
 description = "Seamlessly interact with AI CLI coders (Claude, Gemini, Codex) via tmux TUI sessions."
 readme = "README.md"
 authors = [
