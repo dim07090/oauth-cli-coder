@@ -171,6 +171,46 @@ See [`examples/`](examples/) for complete working demos including:
 - **`creative_chain.py`** — Python API version with multi-round refinement
 - **`creative_chain.sh`** — Pure shell version
 
+## Agent Skills for Local Harnesses
+
+If you're running `oauth-cli-coder` inside another agent harness (Claude Code, Gemini CLI, Codex, OpenClaw), you can install a **SKILL.md** file so the host agent automatically understands how to use `oauth-coder`.
+
+### Installing a skill
+
+```bash
+# Install for a specific platform (into the current project directory)
+oauth-coder skill install claude-code
+oauth-coder skill install gemini
+oauth-coder skill install codex
+oauth-coder skill install openclaw
+
+# Install for all supported platforms at once
+oauth-coder skill install all
+
+# Install globally (to your home directory instead of the project)
+oauth-coder skill install claude-code --global
+oauth-coder skill install all --global
+```
+
+Supported platforms and where the skill file is written:
+
+| Platform | Local path (project) | Global path (home) |
+|----------|---------------------|--------------------|
+| `claude-code` | `.claude/skills/oauth-coder/SKILL.md` | `~/.claude/skills/oauth-coder/SKILL.md` |
+| `gemini` | `.gemini/skills/oauth-coder/SKILL.md` | `~/.gemini/skills/oauth-coder/SKILL.md` |
+| `codex` | `.agents/skills/oauth-coder/SKILL.md` | `~/.agents/skills/oauth-coder/SKILL.md` |
+| `openclaw` | `.agents/skills/oauth-coder/SKILL.md` | `~/.agents/skills/oauth-coder/SKILL.md` |
+
+### Previewing the skill content
+
+```bash
+oauth-coder skill show
+```
+
+This prints the full SKILL.md to stdout without writing any files — useful for review or piping to another tool.
+
+---
+
 ## CLI Reference
 
 | Command | Description |
@@ -181,6 +221,8 @@ See [`examples/`](examples/) for complete working demos including:
 | `oauth-coder list` | List all active sessions |
 | `oauth-coder stop <provider>` | Close a specific session |
 | `oauth-coder stop-all` | Close all sessions |
+| `oauth-coder skill install <platform>` | Install the Agent Skill for a harness platform |
+| `oauth-coder skill show` | Print the SKILL.md content to stdout |
 
 **Common options:** `--model`, `--cwd`, `--session-id`, `--option`/`-o`, `--close`
 
