@@ -108,20 +108,29 @@ class SessionRegistry:
     @classmethod
     def prune(cls) -> List[str]:
         """Remove entries whose tmux sessions no longer exist.  Returns pruned names."""
+        snapshot = cls.list_all()
+        to_remove: List[str] = []
+        for name in list(snapshot.keys()):
+            p = subprocess.run(
+                ["tmux", "has-session", "-t", name],
+                capture_output=True, text=True,
+            )
+            if p.returncode != 0:
+                to_remove.append(name)
+
+        if not to_remove:
+            return []
+
         pruned: list = [[]]
+
         def _op(data):
-            to_remove = []
-            for name in list(data.keys()):
-                p = subprocess.run(
-                    ["tmux", "has-session", "-t", name],
-                    capture_output=True, text=True,
-                )
-                if p.returncode != 0:
-                    to_remove.append(name)
+            removed = []
             for name in to_remove:
-                data.pop(name)
-            pruned[0] = to_remove
-            if to_remove:
+                if name in data:
+                    data.pop(name, None)
+                    removed.append(name)
+            pruned[0] = removed
+            if removed:
                 return data
             return None  # no write needed
         cls._with_lock(_op)
