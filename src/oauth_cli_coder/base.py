@@ -41,7 +41,14 @@ class SessionRegistry:
         raw = fp.read()
         if not raw:
             return {}
-        return json.loads(raw)
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            logger.warning(
+                "Session registry at {} contains invalid JSON; ignoring corrupt contents.",
+                REGISTRY_PATH,
+            )
+            return {}
 
     @staticmethod
     def _write_locked(fp, data: Dict[str, Any]) -> None:
