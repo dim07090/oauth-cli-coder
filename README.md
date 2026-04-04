@@ -136,6 +136,27 @@ ClaudeProvider(
 
 Responses are captured from the complete tmux scrollback buffer, not just the visible terminal. Long outputs come back in full.
 
+### Stealth Mode (PTY Isolation)
+
+AI CLI tools can detect they're running inside tmux — via environment variables, the process tree, or PTY inspection — and may change behavior. **Stealth mode** (on by default) wraps the child process so it can't tell it's inside tmux:
+
+- Scrubs `TMUX`, `TMUX_PANE`, and related env vars
+- Sets `TERM=xterm-256color`
+- Allocates a fresh PTY via `script` so the TTY path doesn't contain "tmux"
+- Uses `setsid` for process-group isolation
+- Falls back gracefully when `script` or `setsid` are unavailable
+- Handles Linux vs macOS `script` flag differences
+
+```bash
+# Stealth is on by default — disable it if you don't need it
+oauth-coder ask claude "hello" --no-stealth
+```
+
+```python
+# Opt out from Python
+ClaudeProvider(stealth=False)
+```
+
 ### TUI Auto-Navigation
 
 The library automatically handles startup friction:
@@ -224,17 +245,18 @@ This prints the full SKILL.md to stdout without writing any files — useful for
 | `oauth-coder skill install <platform>` | Install the Agent Skill for a harness platform |
 | `oauth-coder skill show` | Print the SKILL.md content to stdout |
 
-**Common options:** `--model`, `--cwd`, `--session-id`, `--option`/`-o`, `--close`
+**Common options:** `--model`, `--cwd`, `--session-id`, `--option`/`-o`, `--close`, `--stealth`/`--no-stealth`
 
 ## How It Works
 
 1. `oauth-coder` starts a detached **tmux** session with a large virtual terminal (300x100)
-2. It launches the CLI tool (`claude`, `gemini`, `codex`) inside that session
-3. The **TUI controller** watches the screen and automatically navigates past startup prompts
-4. When you call `ask()`, it pastes your prompt into the pane via tmux buffers (safe for large inputs)
-5. It polls the screen until the CLI returns to an idle prompt
-6. It captures the **full scrollback** and parses out the last response block
-7. The session stays alive for the next call
+2. **Stealth mode** wraps the CLI command to scrub tmux env vars, allocate a fresh PTY, and isolate the process group — so the child process can't detect it's inside tmux
+3. It launches the CLI tool (`claude`, `gemini`, `codex`) inside that session
+4. The **TUI controller** watches the screen and automatically navigates past startup prompts
+5. When you call `ask()`, it pastes your prompt into the pane via tmux buffers (safe for large inputs)
+6. It polls the screen until the CLI returns to an idle prompt
+7. It captures the **full scrollback** and parses out the last response block
+8. The session stays alive for the next call
 
 ## Why "OAuth"?
 
